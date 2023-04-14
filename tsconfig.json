@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"target": "es2020",
+		"module": "commonjs",
+		"outDir": "dist",
+		"strict": true,
+		"strictNullChecks": true,
+		"alwaysStrict": true,
+		"noUnusedLocals": true,
+		"esModuleInterop": true,
+		"skipLibCheck": false,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"allowJs": true,
+		"checkJs": true,
+		"lib": ["ES2019.object", "ES2019.array", "dom"],
+		"typeRoots": ["./node_modules/@types", "./types"]
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts"]
+}
