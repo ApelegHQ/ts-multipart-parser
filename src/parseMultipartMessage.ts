@@ -30,11 +30,19 @@ const textEncoder = new TextEncoder();
 const newline = textEncoder.encode('\r\n');
 const LWSPchar = [0x09, 0x20];
 
+/* From RFC 2046 section 5.1.1 */
 export const boundaryRegex =
 	/^[0-9a-zA-Z'()+_,\-./:=? ]{0,69}[0-9a-zA-Z'()+_,\-./:=?]$/;
 
+/* From RFC 2045 section 5.1
+     tspecials :=  "(" / ")" / "<" / ">" / "@" /
+                   "," / ";" / ":" / "\" / <">
+                   "/" / "[" / "]" / "?" / "="
+                   ; Must be in quoted-string,
+                   ; to use within parameter values
+*/
 export const boundaryMatchRegex =
-	/;\s*boundary=(?:"([0-9a-zA-Z'()+_,\-./:=? ]{0,69}[0-9a-zA-Z'()+_,\-./:=?])"|([0-9a-zA-Z'()+_,\-./=?]{0,69}[0-9a-zA-Z'()+_,\-./=?]))/;
+	/;\s*boundary=(?:"([0-9a-zA-Z'()+_,\-./:=? ]{0,69}[0-9a-zA-Z'()+_,\-./:=?])"|([0-9a-zA-Z'+_\-.]{0,69}[0-9a-zA-Z'+_\-.]))/;
 
 export type TMultipartMessageIterator = AsyncGenerator<{
 	headers: Headers;
