@@ -14,7 +14,10 @@
  */
 
 import assert from 'node:assert/strict';
-import parse, { boundaryMatchRegex, TMultipartMessageGenerator } from '../src';
+import { boundaryMatchRegex } from '../src/lib/boundaryRegex';
+import parse, {
+	TMultipartMessageGenerator,
+} from '../src/parseMultipartMessage';
 
 const testVectors: {
 	name: string;
@@ -295,7 +298,7 @@ const runTest = async (
 	assert.deepEqual(parts, expected);
 };
 
-describe('Basic integration test', () => {
+describe('Parse', () => {
 	testVectors.forEach((v) => {
 		it(v.name, () => runTest(v.src, v.boundary, v.parsed));
 	});

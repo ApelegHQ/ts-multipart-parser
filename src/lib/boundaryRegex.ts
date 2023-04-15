@@ -13,14 +13,16 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-const createBufferStream = <T extends TTypedArray | ArrayBuffer>(buffer: T) => {
-	const readableStream = new ReadableStream<T>({
-		pull(controller) {
-			controller.enqueue(buffer);
-			controller.close();
-		},
-	});
-	return readableStream;
-};
+/* From RFC 2046 section 5.1.1 */
+export const boundaryRegex =
+	/^[0-9a-zA-Z'()+_,\-./:=? ]{0,69}[0-9a-zA-Z'()+_,\-./:=?]$/;
 
-export default createBufferStream;
+/* From RFC 2045 section 5.1
+     tspecials :=  "(" / ")" / "<" / ">" / "@" /
+                   "," / ";" / ":" / "\" / <">
+                   "/" / "[" / "]" / "?" / "="
+                   ; Must be in quoted-string,
+                   ; to use within parameter values
+*/
+export const boundaryMatchRegex =
+	/;\s*boundary=(?:"([0-9a-zA-Z'()+_,\-./:=? ]{0,69}[0-9a-zA-Z'()+_,\-./:=?])"|([0-9a-zA-Z'+_\-.]{0,69}[0-9a-zA-Z'+_\-.]))/;

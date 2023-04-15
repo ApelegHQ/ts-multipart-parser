@@ -56,6 +56,19 @@ A regular expression that can be used to validate a boundary string.
 A regular expression that can be used to extract a boundary string from a
 `Content-Type` header.
 
+#### `encodeMultipartMessage = (boundary: string, msg: TDecodedMultipartMessage[]): ReadableStream&lt;ArrayBuffer&gt;
+
+This function takes a boundary string and an array of messages as arguments and returns a `ReadableStream` that can be read to obtain a multipart message.
+
+`TDecodedMultipartMessage` is defined as an object with the following fields:
+
+  * `headers`: a `Headers` object containing the headers of the current part
+  * `body` (optional): The body of the current part, or `null` if the part is
+     empty. It can be any of the following types: `ArrayBuffer`, `Blob`, `ReadableStream` or any typed array, such as `Uint8Array`.
+  * `parts` (optional): An array of one element or more of the same type
+     (`TDecodedMultipartMessage`), for nested messages. If both `body` and
+     `parts` are specified, `body` takes precedence.
+
 ### Example
 
 ```js

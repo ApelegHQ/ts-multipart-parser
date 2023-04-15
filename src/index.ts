@@ -13,6 +13,9 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+export { default as encodeMultipartMessage } from './encodeMultipartMessage';
+export type { TDecodedMultipartMessage } from './encodeMultipartMessage';
+export { boundaryMatchRegex, boundaryRegex } from './lib/boundaryRegex';
 export { default as parseMessage } from './parseMessage';
 export type { TMessage } from './parseMessage';
 export * from './parseMultipartMessage';
