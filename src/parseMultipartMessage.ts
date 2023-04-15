@@ -44,18 +44,19 @@ export const boundaryRegex =
 export const boundaryMatchRegex =
 	/;\s*boundary=(?:"([0-9a-zA-Z'()+_,\-./:=? ]{0,69}[0-9a-zA-Z'()+_,\-./:=?])"|([0-9a-zA-Z'+_\-.]{0,69}[0-9a-zA-Z'+_\-.]))/;
 
-export type TMultipartMessageIterator = AsyncGenerator<{
+export type TMultipartMessage = {
 	headers: Headers;
 	body?: Uint8Array | null;
-	parts?: TMultipartMessageIterator;
-}>;
+	parts?: TMultipartMessageGenerator | null;
+};
+export type TMultipartMessageGenerator = AsyncGenerator<TMultipartMessage>;
 
 async function* parseMultipartMessage<T extends TTypedArray>(
 	stream: ReadableStream<T>,
 	boundary: string,
-): TMultipartMessageIterator {
+): TMultipartMessageGenerator {
 	if (!boundaryRegex.test(boundary)) {
-		throw new Error('Invalid bounday');
+		throw new Error('Invalid boundary delimiter');
 	}
 
 	const boundaryDelimiter = textEncoder.encode(`\r\n--${boundary}`);
@@ -85,15 +86,18 @@ async function* parseMultipartMessage<T extends TTypedArray>(
 
 				// Check if the boundary is followed by a newline
 				const nextIndex = boundaryIndex + boundaryDelimiter.length;
+				// Transport padding
+				// Maximum acceptable transport padding
+				// set to 32 bytes
 				const nextIndexCRLF = findIndex(
-					buffer.subarray(nextIndex),
+					buffer.subarray(nextIndex, nextIndex + 32),
 					newline,
 				);
 
 				if (
 					nextIndexCRLF === -1 ||
 					!Array.from(
-						buffer.slice(
+						buffer.subarray(
 							nextIndex + Math.min(2, nextIndexCRLF),
 							nextIndex + nextIndexCRLF,
 						),
@@ -104,6 +108,7 @@ async function* parseMultipartMessage<T extends TTypedArray>(
 					);
 				}
 
+				// Possibly reached the end of the multipart message
 				if (nextIndexCRLF >= 2) {
 					if (
 						[EState.BODY_PART, EState.ENCAPSULATION].includes(
@@ -148,6 +153,10 @@ async function* parseMultipartMessage<T extends TTypedArray>(
 							const partContentType =
 								parsedPart.headers.get('content-type');
 
+							let innerParts:
+								| TMultipartMessage['parts']
+								| undefined = undefined;
+
 							if (
 								parsedPart.body &&
 								partContentType?.startsWith('multipart/')
@@ -155,25 +164,27 @@ async function* parseMultipartMessage<T extends TTypedArray>(
 								const partBoundaryMatch =
 									partContentType.match(boundaryMatchRegex);
 
-								if (!partBoundaryMatch) {
-									throw new Error('Invalid inner part');
-								}
+								if (partBoundaryMatch) {
+									const partBoundary =
+										partBoundaryMatch[1] ||
+										partBoundaryMatch[2];
 
-								const partBoundary =
-									partBoundaryMatch[1] ||
-									partBoundaryMatch[2];
-
-								yield {
-									headers: parsedPart.headers,
-									body: parsedPart.body,
-									parts: parseMultipartMessage(
+									innerParts = parseMultipartMessage(
 										createBufferStream(parsedPart.body),
 										partBoundary,
-									),
-								};
-							} else {
-								yield parsedPart;
+									);
+								} else {
+									innerParts = null;
+								}
 							}
+
+							yield {
+								headers: parsedPart.headers,
+								body: parsedPart.body,
+								...(innerParts !== undefined && {
+									parts: innerParts,
+								}),
+							};
 						}
 						break;
 				}

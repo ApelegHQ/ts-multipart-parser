@@ -14,7 +14,7 @@
  */
 
 import assert from 'node:assert/strict';
-import parse, { boundaryMatchRegex, TMultipartMessageIterator } from '../src';
+import parse, { boundaryMatchRegex, TMultipartMessageGenerator } from '../src';
 
 const testVectors: {
 	name: string;
@@ -259,7 +259,7 @@ const extractParts = (testVector: string, boundary: string) => {
 		boundary,
 	);
 
-	const inner = async (result: TMultipartMessageIterator): Promise<TT[]> => {
+	const inner = async (result: TMultipartMessageGenerator): Promise<TT[]> => {
 		const parts = [];
 
 		for await (const part of result) {
