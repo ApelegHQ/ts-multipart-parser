@@ -56,7 +56,7 @@ A regular expression that can be used to validate a boundary string.
 A regular expression that can be used to extract a boundary string from a
 `Content-Type` header.
 
-#### `encodeMultipartMessage = (boundary: string, msg: TDecodedMultipartMessage[]): ReadableStream&lt;ArrayBuffer&gt;
+#### `encodeMultipartMessage(boundary: string, msg: TDecodedMultipartMessage[]): ReadableStream&lt;ArrayBuffer&gt;`
 
 This function takes a boundary string and an array of messages as arguments and returns a `ReadableStream` that can be read to obtain a multipart message.
 

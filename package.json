@@ -1,6 +1,6 @@
 {
 	"name": "@exact-realty/multipart-parser",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"description": "TypeScript streaming parser for MIME multipart messages",
 	"main": "dist/index.js",
 	"module": "./dist/index.mjs",
