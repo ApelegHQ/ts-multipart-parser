@@ -19,11 +19,11 @@ part in a multipart message. Nested multipart messages are supported.
 You can install the library using either `npm` or `yarn`:
 
 ```sh
-npm install @exact-realty/multipart-message-parser
+npm install @exact-realty/multipart-parser
 ```
 
 ```sh
-yarn add @exact-realty/multipart-message-parser
+yarn add @exact-realty/multipart-parser
 ```
 
 ## 🎬 Usage
