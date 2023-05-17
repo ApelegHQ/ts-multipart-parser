@@ -11,6 +11,8 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+import type { TTypedArray } from '../types/index.js';
+
 const mergeTypedArrays = <T extends TTypedArray>(
 	input0: T,
 	...input: T[]

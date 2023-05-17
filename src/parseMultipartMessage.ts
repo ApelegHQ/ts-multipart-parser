@@ -13,11 +13,12 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-import { boundaryMatchRegex, boundaryRegex } from './lib/boundaryRegex';
-import createBufferStream from './lib/createBufferStream';
-import findIndex from './lib/findIndex';
-import mergeTypedArrays from './lib/mergeTypedArrays';
-import parseMessage from './parseMessage';
+import { boundaryMatchRegex, boundaryRegex } from './lib/boundaryRegex.js';
+import createBufferStream from './lib/createBufferStream.js';
+import findIndex from './lib/findIndex.js';
+import mergeTypedArrays from './lib/mergeTypedArrays.js';
+import parseMessage from './parseMessage.js';
+import type { TTypedArray } from './types/index.js';
 
 enum EState {
 	PREAMBLE,

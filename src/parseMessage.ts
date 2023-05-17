@@ -11,7 +11,7 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-import findIndex from './lib/findIndex';
+import findIndex from './lib/findIndex.js';
 
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();

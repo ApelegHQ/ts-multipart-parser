@@ -13,13 +13,16 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-import { boundaryMatchRegex } from './lib/boundaryRegex';
-import createBufferStream from './lib/createBufferStream';
+import { boundaryMatchRegex } from './lib/boundaryRegex.js';
+import createBufferStream from './lib/createBufferStream.js';
+import type { TTypedArray } from './types/index.js';
+
+type TIterable<T> = AsyncIterable<T> | Iterable<T>;
 
 export type TDecodedMultipartMessage = {
 	headers: Headers;
 	body?: TTypedArray | ArrayBuffer | Blob | ReadableStream | null;
-	parts?: TDecodedMultipartMessage[];
+	parts?: TIterable<TDecodedMultipartMessage>;
 };
 
 const textEncoder = new TextEncoder();
@@ -49,17 +52,20 @@ const pipeToOptions = {
 
 async function* asyncEncoderGenerator(
 	boundary: string,
-	msg: TDecodedMultipartMessage[],
+	msg: TIterable<TDecodedMultipartMessage>,
 	ws: WritableStream,
 ): AsyncGenerator<void> {
 	const encodedBoundary = textEncoder.encode(`\r\n--${boundary}`);
 
-	if (!Array.isArray(msg) || msg.length < 1) {
+	if (Array.isArray(msg) && msg.length < 1) {
 		await ws.abort(Error('At least one part is required'));
 		return;
 	}
 
-	for (const part of msg) {
+	let count = 0;
+
+	for await (const part of msg) {
+		count++;
 		let subBoundary: string | undefined;
 		let partContentType: string | null | undefined;
 
@@ -166,13 +172,18 @@ async function* asyncEncoderGenerator(
 		}
 	}
 
+	if (!count) {
+		await ws.abort(Error('At least one part is required'));
+		return;
+	}
+
 	const encodedEndBoundary = textEncoder.encode(`\r\n--${boundary}--`);
 	await createBufferStream(encodedEndBoundary).pipeTo(ws, pipeToOptions);
 }
 
 const encodeMultipartMessage = (
 	boundary: string,
-	msg: TDecodedMultipartMessage[],
+	msg: TIterable<TDecodedMultipartMessage>,
 ): ReadableStream<ArrayBuffer> => {
 	const transformStream = new TransformStream<ArrayBuffer>();
 

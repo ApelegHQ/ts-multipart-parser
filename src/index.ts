@@ -13,10 +13,10 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-export { default as encodeMultipartMessage } from './encodeMultipartMessage';
-export type { TDecodedMultipartMessage } from './encodeMultipartMessage';
-export { boundaryMatchRegex, boundaryRegex } from './lib/boundaryRegex';
-export { default as parseMessage } from './parseMessage';
-export type { TMessage } from './parseMessage';
-export * from './parseMultipartMessage';
-export { default } from './parseMultipartMessage';
+export { default as encodeMultipartMessage } from './encodeMultipartMessage.js';
+export type { TDecodedMultipartMessage } from './encodeMultipartMessage.js';
+export { boundaryMatchRegex, boundaryRegex } from './lib/boundaryRegex.js';
+export { default as parseMessage } from './parseMessage.js';
+export type { TMessage } from './parseMessage.js';
+export * from './parseMultipartMessage.js';
+export { default } from './parseMultipartMessage.js';

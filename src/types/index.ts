@@ -13,16 +13,13 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-import type { TTypedArray } from '../types/index.js';
-
-const createBufferStream = <T extends TTypedArray | ArrayBuffer>(buffer: T) => {
-	const readableStream = new ReadableStream<T>({
-		pull(controller) {
-			controller.enqueue(buffer);
-			controller.close();
-		},
-	});
-	return readableStream;
-};
-
-export default createBufferStream;
+export type TTypedArray =
+	| Int8Array
+	| Uint8Array
+	| Uint8ClampedArray
+	| Int16Array
+	| Uint16Array
+	| Int32Array
+	| Uint32Array
+	| Float32Array
+	| Float64Array;
