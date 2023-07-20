@@ -1,6 +1,6 @@
 {
 	"name": "@exact-realty/multipart-parser",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"description": "TypeScript streaming parser for MIME multipart messages",
 	"main": "dist/index.js",
 	"module": "./dist/index.mjs",
@@ -19,7 +19,6 @@
 		"prepare": "npm run build",
 		"prepublishOnly": "npm test && npm run lint",
 		"preversion": "npm run lint",
-		"postinstall": "exit 0",
 		"version": "npm run lint && git add -A src",
 		"postversion": "git push && git push --tags"
 	},
@@ -32,17 +31,17 @@
 	"keywords": ["form-data", "formdata", "mime", "mime", "multipart", "multipart/form-data", "multipart/mixed", "multipart/related", "parser", "rfc2046", "rfc2388", "rfc7568"],
 	"devDependencies": {
 		"@types/mocha": "^10.0.1",
-		"@types/node": "^18.0.0",
-		"@typescript-eslint/eslint-plugin": "^5.57.1",
-		"@typescript-eslint/parser": "^5.57.1",
-		"esbuild": "^0.17.15",
-		"eslint": "^8.37.0",
+		"@types/node": "^20.4.2",
+		"@typescript-eslint/eslint-plugin": "^6.1.0",
+		"@typescript-eslint/parser": "^6.1.0",
+		"esbuild": "^0.18.14",
+		"eslint": "^8.45.0",
 		"eslint-config-prettier": "^8.8.0",
-		"eslint-plugin-prettier": "^4.2.1",
+		"eslint-plugin-prettier": "^5.0.0",
 		"mocha": "^10.2.0",
 		"nyc": "^15.1.0",
-		"prettier": "^2.6.2",
+		"prettier": "^3.0.0",
 		"ts-node": "^10.9.1",
-		"typescript": "^4.6.4"
+		"typescript": "^5.1.6"
 	}
 }

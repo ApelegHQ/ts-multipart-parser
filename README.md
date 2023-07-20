@@ -1,5 +1,12 @@
 # Multipart Message Parser
 
+ [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Exact-Realty_ts-multipart-parser&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Exact-Realty_ts-multipart-parser)
+ [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=Exact-Realty_ts-multipart-parser&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=Exact-Realty_ts-multipart-parser)
+ [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Exact-Realty_ts-multipart-parser&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Exact-Realty_ts-multipart-parser)
+ [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Exact-Realty_ts-multipart-parser&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Exact-Realty_ts-multipart-parser)
+ [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Exact-Realty_ts-multipart-parser&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Exact-Realty_ts-multipart-parser)
+ ![NPM Downloads](https://img.shields.io/npm/dw/@exact-realty/multipart-parser?style=flat-square)
+
 This is a library for parsing MIME multipart messages, such as those used in
 HTTP requests and email messages, written in TypeScript. It provides an
 easy-to-use async generator that returns the parsed headers and body of each
