@@ -17,8 +17,8 @@ import assert from 'node:assert';
 import { webcrypto } from 'node:crypto';
 import encoder, {
 	TDecodedMultipartMessage,
-} from '../src/encodeMultipartMessage';
-import createBufferStream from '../src/lib/createBufferStream';
+} from '../src/encodeMultipartMessage.js';
+import createBufferStream from '../src/lib/createBufferStream.js';
 
 !globalThis.crypto &&
 	((() => globalThis || { crypto: {} })().crypto =

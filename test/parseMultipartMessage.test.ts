@@ -14,10 +14,10 @@
  */
 
 import assert from 'node:assert/strict';
-import { boundaryMatchRegex } from '../src/lib/boundaryRegex';
+import { boundaryMatchRegex } from '../src/lib/boundaryRegex.js';
 import parse, {
 	TMultipartMessageGenerator,
-} from '../src/parseMultipartMessage';
+} from '../src/parseMultipartMessage.js';
 
 const testVectors: {
 	name: string;
@@ -225,6 +225,28 @@ Content-Disposition: attachment;
 			},
 		],
 	},
+	/* From RFC 7578 section 4.6 */
+	{
+		name: 'RFC 7578 section 4.6',
+		boundary: '----WebKitFormBoundarylD5CPrRLWMEri7nf',
+		src: /*
+		 */ `------WebKitFormBoundarylD5CPrRLWMEri7nf
+Content-Disposition: form-data; name="password"
+
+stset
+------WebKitFormBoundarylD5CPrRLWMEri7nf--
+`,
+		parsed: [
+			{
+				h: {
+					['content-disposition']: 'form-data; name="password"',
+					['content-transfer-encoding']: '7bit',
+					['content-type']: 'text/plain; charset=us-ascii',
+				},
+				b: 'stset',
+			},
+		],
+	},
 ];
 
 const textDecoder = new TextDecoder();
@@ -263,7 +285,7 @@ const extractParts = (testVector: string, boundary: string) => {
 	);
 
 	const inner = async (result: TMultipartMessageGenerator): Promise<TT[]> => {
-		const parts = [];
+		const parts: TT[] = [];
 
 		for await (const part of result) {
 			const hh: [string, string][] = [];
@@ -287,13 +309,15 @@ const runTest = async (
 	expectedBoundary: string,
 	expected: TT[],
 ) => {
-	const boundary = (() => {
-		const m = testVector.match(boundaryMatchRegex);
-		return m && (m[1] || m[2]);
-	})();
-	assert.equal(boundary, expectedBoundary);
+	if (!testVector.startsWith('--' + expectedBoundary)) {
+		const boundary = (() => {
+			const m = testVector.match(boundaryMatchRegex);
+			return m && (m[1] || m[2]);
+		})();
+		assert.equal(boundary, expectedBoundary);
+	}
 
-	const parts = await extractParts(testVector, boundary);
+	const parts = await extractParts(testVector, expectedBoundary);
 
 	assert.deepEqual(parts, expected);
 };

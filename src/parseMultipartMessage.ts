@@ -65,7 +65,23 @@ async function* parseMultipartMessage<T extends TTypedArray>(
 			buffer = mergeTypedArrays(buffer, new Uint8Array(value.buffer));
 
 			while (buffer.length) {
-				const boundaryIndex = findIndex(buffer, boundaryDelimiter);
+				let boundaryIndex: number = NaN;
+
+				if (state === EState.PREAMBLE) {
+					// Special handling of empty preamble
+					boundaryIndex =
+						findIndex(buffer, boundaryDelimiter.slice(2)) - 2;
+
+					if (boundaryIndex === -3) {
+						// If the boundary isn't found in the current buffer, we
+						// need to read more data
+						break;
+					}
+				}
+
+				if (boundaryIndex !== -2) {
+					boundaryIndex = findIndex(buffer, boundaryDelimiter);
+				}
 
 				if (boundaryIndex === -1) {
 					// If the boundary isn't found in the current buffer, we need to read more data
