@@ -1,6 +1,6 @@
 {
 	"name": "@exact-realty/multipart-parser",
-	"version": "1.0.8",
+	"version": "1.0.9",
 	"description": "TypeScript streaming parser for MIME multipart messages",
 	"main": "dist/index.js",
 	"module": "./dist/index.mjs",
@@ -43,18 +43,18 @@
 	"license": "ISC",
 	"keywords": ["form-data", "formdata", "mime", "mime", "multipart", "multipart/form-data", "multipart/mixed", "multipart/related", "parser", "rfc2046", "rfc2388", "rfc7568"],
 	"devDependencies": {
-		"@types/mocha": "^10.0.1",
-		"@types/node": "^20.5.1",
-		"@typescript-eslint/eslint-plugin": "^6.4.0",
-		"@typescript-eslint/parser": "^6.4.0",
-		"esbuild": "^0.19.2",
-		"eslint": "^8.47.0",
+		"@types/mocha": "^10.0.2",
+		"@types/node": "^20.8.2",
+		"@typescript-eslint/eslint-plugin": "^6.7.4",
+		"@typescript-eslint/parser": "^6.7.4",
+		"esbuild": "^0.19.4",
+		"eslint": "^8.50.0",
 		"eslint-config-prettier": "^9.0.0",
 		"eslint-plugin-prettier": "^5.0.0",
 		"mocha": "^10.2.0",
 		"nyc": "^15.1.0",
-		"prettier": "^3.0.2",
+		"prettier": "^3.0.3",
 		"ts-node": "^10.9.1",
-		"typescript": "^5.1.6"
+		"typescript": "^5.2.2"
 	}
 }
