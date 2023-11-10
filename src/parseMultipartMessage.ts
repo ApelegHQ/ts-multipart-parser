@@ -39,7 +39,7 @@ export type TMultipartMessage = {
 };
 export type TMultipartMessageGenerator = AsyncGenerator<TMultipartMessage>;
 
-async function* parseMultipartMessage<T extends TTypedArray>(
+async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 	stream: ReadableStream<T>,
 	boundary: string,
 ): TMultipartMessageGenerator {
@@ -58,11 +58,18 @@ async function* parseMultipartMessage<T extends TTypedArray>(
 		while (state !== EState.EPILOGUE) {
 			const { done, value } = await reader.read();
 
-			if (done) {
-				throw new Error('Invalid message');
+			if (!done) {
+				buffer = mergeTypedArrays(
+					buffer,
+					ArrayBuffer.isView(value)
+						? new Uint8Array(
+								value.buffer,
+								value.byteOffset,
+								value.byteLength,
+						  )
+						: new Uint8Array(value),
+				);
 			}
-
-			buffer = mergeTypedArrays(buffer, new Uint8Array(value.buffer));
 
 			while (buffer.length) {
 				let boundaryIndex: number = NaN;
@@ -98,22 +105,37 @@ async function* parseMultipartMessage<T extends TTypedArray>(
 					newline,
 				);
 
-				if (
-					nextIndexCRLF === -1 ||
-					!Array.from(
-						buffer.subarray(
-							nextIndex + Math.min(2, nextIndexCRLF),
-							nextIndex + nextIndexCRLF,
-						),
-					).every((v) => LWSPchar.includes(v))
-				) {
-					throw new Error(
-						`Invalid boundary at index ${boundaryIndex}`,
-					);
+				if (!done) {
+					if (
+						nextIndexCRLF === -1 &&
+						buffer.length - nextIndex < 32
+					) {
+						break;
+					}
+
+					if (
+						nextIndexCRLF === -1 ||
+						!Array.from(
+							buffer.subarray(
+								nextIndex + Math.min(2, nextIndexCRLF),
+								nextIndex + nextIndexCRLF,
+							),
+						).every((v) => LWSPchar.includes(v))
+					) {
+						console.error({
+							b: Buffer.from(buffer).toString(),
+							l: buffer.length,
+							nextIndex,
+							x: buffer.length - nextIndex,
+						});
+						throw new Error(
+							`Invalid boundary at index ${boundaryIndex}`,
+						);
+					}
 				}
 
 				// Possibly reached the end of the multipart message
-				if (nextIndexCRLF >= 2) {
+				if (done || nextIndexCRLF >= 2) {
 					if (
 						[EState.BODY_PART, EState.ENCAPSULATION].includes(
 							state,
@@ -126,11 +148,6 @@ async function* parseMultipartMessage<T extends TTypedArray>(
 						!LWSPchar.includes(buffer[nextIndex + 0]) ||
 						!LWSPchar.includes(buffer[nextIndex + 1])
 					) {
-						console.log(
-							Buffer.from(buffer.subarray(0, nextIndex)).toString(
-								'ascii',
-							),
-						);
 						throw new Error(
 							`Invalid boundary at index ${boundaryIndex} (${boundary}): ${buffer[
 								nextIndex + 1
@@ -196,6 +213,10 @@ async function* parseMultipartMessage<T extends TTypedArray>(
 				if (state === EState.EPILOGUE) {
 					buffer = buffer.subarray(buffer.length);
 					break;
+				}
+
+				if (done) {
+					throw new Error('Invalid message');
 				}
 
 				buffer = buffer.subarray(nextIndexCRLF + nextIndex + 2);
