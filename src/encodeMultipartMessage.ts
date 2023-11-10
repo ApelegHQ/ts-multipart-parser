@@ -136,24 +136,22 @@ async function* asyncEncoderGenerator(
 			}
 			const headers = textEncoder.encode(hh.join('\r\n'));
 			hh.length = 0;
-			await createBufferStream(headers.buffer).pipeTo(ws, pipeToOptions);
+			await createBufferStream(headers).pipeTo(ws, pipeToOptions);
 			yield;
 		}
 
 		// Now, we'll either send a body, if there is one, or construct
 		// a multipart submessage
 		if (part.body) {
-			if (part.body instanceof ArrayBuffer) {
+			if (
+				part.body instanceof ArrayBuffer ||
+				ArrayBuffer.isView(part.body)
+			) {
 				await createBufferStream(part.body).pipeTo(ws, pipeToOptions);
 			} else if (part.body instanceof Blob) {
 				await part.body.stream().pipeTo(ws, pipeToOptions);
 			} else if (part.body instanceof ReadableStream) {
 				await part.body.pipeTo(ws, pipeToOptions);
-			} else if (part.body.buffer instanceof ArrayBuffer) {
-				await createBufferStream(part.body.buffer).pipeTo(
-					ws,
-					pipeToOptions,
-				);
 			} else {
 				await ws.abort(Error('Invalid body type'));
 				return;
@@ -208,7 +206,13 @@ const encodeMultipartMessage = (
 				}
 
 				if (readResult.done) {
-					controller.enqueue(new Uint8Array([0x0d, 0x0a]));
+					const terminator = new Uint8Array([0x0d, 0x0a]);
+					controller.enqueue(
+						terminator.buffer.slice(
+							terminator.byteOffset,
+							terminator.byteOffset + terminator.byteLength,
+						),
+					);
 					controller.close();
 					return;
 				}

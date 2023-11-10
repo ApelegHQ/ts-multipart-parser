@@ -26,6 +26,9 @@ await esbuild.build({
 	entryNames: '[name]',
 	platform: 'node',
 	external: ['esbuild'],
+	outExtension: {
+		'.js': '.cjs',
+	},
 });
 
 await esbuild.build({

@@ -16,9 +16,22 @@
 import type { TTypedArray } from '../types/index.js';
 
 const createBufferStream = <T extends TTypedArray | ArrayBuffer>(buffer: T) => {
-	const readableStream = new ReadableStream<T>({
+	const readableStream = new ReadableStream<ArrayBuffer>({
 		pull(controller) {
-			controller.enqueue(buffer);
+			if (ArrayBuffer.isView(buffer)) {
+				controller.enqueue(
+					buffer.buffer.slice(
+						buffer.byteOffset,
+						buffer.byteOffset + buffer.byteLength,
+					),
+				);
+			} else if (buffer instanceof ArrayBuffer) {
+				controller.enqueue(buffer);
+			} else {
+				throw new TypeError(
+					'Expected ArrayBuffer or an ArrayBuffer view.',
+				);
+			}
 			controller.close();
 		},
 	});
