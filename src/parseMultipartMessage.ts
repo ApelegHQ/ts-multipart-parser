@@ -14,13 +14,13 @@
  */
 
 import { boundaryMatchRegex, boundaryRegex } from './lib/boundaryRegex.js';
-import createBufferStream from './lib/createBufferStream.js';
-import findIndex from './lib/findIndex.js';
-import mergeTypedArrays from './lib/mergeTypedArrays.js';
-import parseMessage from './parseMessage.js';
+import { createBufferStream } from './lib/createBufferStream.js';
+import { findIndex } from './lib/findIndex.js';
+import { mergeTypedArrays } from './lib/mergeTypedArrays.js';
+import { parseMessage } from './parseMessage.js';
 import type { TTypedArray } from './types/index.js';
 
-enum EState {
+export enum EState {
 	PREAMBLE,
 	BODY_PART,
 	ENCAPSULATION,
@@ -39,10 +39,9 @@ export type TMultipartMessage = {
 };
 export type TMultipartMessageGenerator = AsyncGenerator<TMultipartMessage>;
 
-async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
-	stream: ReadableStream<T>,
-	boundary: string,
-): TMultipartMessageGenerator {
+export async function* parseMultipartMessage<
+	T extends TTypedArray | ArrayBuffer,
+>(stream: ReadableStream<T>, boundary: string): TMultipartMessageGenerator {
 	if (!boundaryRegex.test(boundary)) {
 		throw new Error('Invalid boundary delimiter');
 	}
@@ -227,5 +226,3 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 		reader.releaseLock();
 	}
 }
-
-export default parseMultipartMessage;

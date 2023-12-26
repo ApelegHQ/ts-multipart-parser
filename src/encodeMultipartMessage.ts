@@ -14,10 +14,10 @@
  */
 
 import { boundaryMatchRegex } from './lib/boundaryRegex.js';
-import createBufferStream from './lib/createBufferStream.js';
+import { createBufferStream } from './lib/createBufferStream.js';
 import type { TTypedArray } from './types/index.js';
 
-type TIterable<T> = AsyncIterable<T> | Iterable<T>;
+export type TIterable<T> = AsyncIterable<T> | Iterable<T>;
 
 export type TDecodedMultipartMessage = {
 	headers: Headers;
@@ -29,13 +29,13 @@ const textEncoder = new TextEncoder();
 
 export const liberalBoundaryMatchRegex = /;\s*boundary=(?:"([^"]+)"|([^;",]+))/;
 
-const multipartBoundaryAlphabet =
+export const multipartBoundaryAlphabet =
 	'ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
 	'abcdefghijklmnopqrstuvwxyz' +
 	'0123456789' +
 	'+_-.';
 
-const generateMultipartBoundary = (): string => {
+export const generateMultipartBoundary = (): string => {
 	const buffer = new Uint8Array(24);
 	globalThis.crypto.getRandomValues(buffer);
 	return Array.from(buffer)
@@ -50,7 +50,7 @@ const pipeToOptions = {
 	preventClose: true,
 };
 
-async function* asyncEncoderGenerator(
+export async function* asyncEncoderGenerator(
 	boundary: string,
 	msg: TIterable<TDecodedMultipartMessage>,
 	ws: WritableStream,
@@ -179,7 +179,7 @@ async function* asyncEncoderGenerator(
 	await createBufferStream(encodedEndBoundary).pipeTo(ws, pipeToOptions);
 }
 
-const encodeMultipartMessage = (
+export const encodeMultipartMessage = (
 	boundary: string,
 	msg: TIterable<TDecodedMultipartMessage>,
 ): ReadableStream<ArrayBuffer> => {
@@ -224,5 +224,3 @@ const encodeMultipartMessage = (
 
 	return readableStream;
 };
-
-export default encodeMultipartMessage;

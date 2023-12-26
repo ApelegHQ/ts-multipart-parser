@@ -15,7 +15,9 @@
 
 import type { TTypedArray } from '../types/index.js';
 
-const createBufferStream = <T extends TTypedArray | ArrayBuffer>(buffer: T) => {
+export const createBufferStream = <T extends TTypedArray | ArrayBuffer>(
+	buffer: T,
+) => {
 	const readableStream = new ReadableStream<ArrayBuffer>({
 		pull(controller) {
 			if (ArrayBuffer.isView(buffer)) {
@@ -37,5 +39,3 @@ const createBufferStream = <T extends TTypedArray | ArrayBuffer>(buffer: T) => {
 	});
 	return readableStream;
 };
-
-export default createBufferStream;

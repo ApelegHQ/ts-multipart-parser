@@ -15,7 +15,8 @@
 
 import assert from 'node:assert/strict';
 import { boundaryMatchRegex } from '../src/lib/boundaryRegex.js';
-import parse, {
+import {
+	parseMultipartMessage as parse,
 	TMultipartMessageGenerator,
 } from '../src/parseMultipartMessage.js';
 

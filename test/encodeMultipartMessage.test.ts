@@ -15,10 +15,11 @@
 
 import assert from 'node:assert';
 import { webcrypto } from 'node:crypto';
-import encoder, {
+import {
+	encodeMultipartMessage as encoder,
 	TDecodedMultipartMessage,
 } from '../src/encodeMultipartMessage.js';
-import createBufferStream from '../src/lib/createBufferStream.js';
+import { createBufferStream } from '../src/lib/createBufferStream.js';
 
 !globalThis.crypto &&
 	((() => globalThis || { crypto: {} })().crypto =

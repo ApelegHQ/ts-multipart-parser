@@ -11,7 +11,7 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-import findIndex from './lib/findIndex.js';
+import { findIndex } from './lib/findIndex.js';
 
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
@@ -24,7 +24,7 @@ export type TMessage = {
 	body: Uint8Array | null;
 };
 
-const parseMessage = (buffer: Uint8Array): TMessage => {
+export const parseMessage = (buffer: Uint8Array): TMessage => {
 	let nextIndex = 0;
 
 	const headersArray: [string, string][] = [];
@@ -76,5 +76,3 @@ const parseMessage = (buffer: Uint8Array): TMessage => {
 				: buffer.subarray(nextIndex + newline.length),
 	};
 };
-
-export default parseMessage;

@@ -13,7 +13,7 @@
 
 import type { TTypedArray } from '../types/index.js';
 
-const mergeTypedArrays = <T extends TTypedArray>(
+export const mergeTypedArrays = <T extends TTypedArray>(
 	input0: T,
 	...input: T[]
 ): T => {
@@ -33,5 +33,3 @@ const mergeTypedArrays = <T extends TTypedArray>(
 
 	return mergedArray;
 };
-
-export default mergeTypedArrays;
