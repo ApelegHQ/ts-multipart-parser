@@ -3,7 +3,7 @@
 	"version": "2.0.0",
 	"description": "TypeScript streaming parser for MIME multipart messages",
 	"main": "dist/index.cjs",
-	"types": "dist/index.d.ts",
+	"types": "dist/index.d.cts",
 	"type": "module",
 	"module": "./dist/index.mjs",
 	"exports": {
