@@ -16,6 +16,8 @@
  */
 
 import esbuild from 'esbuild';
+import { copyFileSync, readdirSync } from 'fs';
+import path from 'path';
 
 await esbuild.build({
 	entryPoints: ['./src/index.ts'],
@@ -44,3 +46,21 @@ await esbuild.build({
 		'.js': '.mjs',
 	},
 });
+
+function copyDeclarationFiles(srcDir) {
+	readdirSync(srcDir, { withFileTypes: true }).forEach((dirent) => {
+		const fullPath = path.join(srcDir, dirent.name);
+
+		if (dirent.isDirectory()) {
+			// Recurse into directories
+			copyDeclarationFiles(fullPath);
+		} else if (dirent.isFile() && path.extname(fullPath) === '.ts') {
+			// Copy .d.ts files to .d.cts
+			const newFileName = path.basename(fullPath, '.d.ts') + '.d.cts';
+			const newFilePath = path.join(srcDir, newFileName);
+			copyFileSync(fullPath, newFilePath);
+		}
+	});
+}
+
+copyDeclarationFiles('./dist');
