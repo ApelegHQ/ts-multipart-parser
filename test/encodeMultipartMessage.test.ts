@@ -15,6 +15,7 @@
 
 import assert from 'node:assert';
 import { webcrypto } from 'node:crypto';
+import { describe, it } from 'node:test';
 import encoder, {
 	TDecodedMultipartMessage,
 } from '../src/encodeMultipartMessage.js';
@@ -216,7 +217,7 @@ const runTest = async (
 ) => {
 	const stream = encoder(boundary, testVector);
 	const reader = stream.getReader();
-	const parts = [];
+	const parts: string[] = [];
 
 	try {
 		for (;;) {

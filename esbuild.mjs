@@ -16,31 +16,63 @@
  */
 
 import esbuild from 'esbuild';
+import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
-await esbuild.build({
-	entryPoints: ['./src/index.ts'],
-	outdir: process.env['BUILD_TARGET_DIR'] || 'dist',
+const outdir = process.env['BUILD_TARGET_DIR'] || 'dist';
+
+const buildOptionsBase = {
+	entryPoints: [
+		'./src/index.ts',
+		'./src/exports/encodeMultipartMessage.ts',
+		'./src/exports/parseMessage.ts',
+		'./src/exports/parseMultipartMessage.ts',
+	],
+	target: 'es2018',
+	outdir,
 	bundle: true,
 	minify: true,
-	format: 'cjs',
 	entryNames: '[name]',
 	platform: 'node',
 	external: ['esbuild'],
-	outExtension: {
-		'.js': '.cjs',
-	},
-});
+};
 
-await esbuild.build({
-	entryPoints: ['./src/index.ts'],
-	outdir: process.env['BUILD_TARGET_DIR'] || 'dist',
-	bundle: true,
-	minify: true,
-	format: 'esm',
-	entryNames: '[name]',
-	platform: 'node',
-	external: ['esbuild'],
-	outExtension: {
-		'.js': '.mjs',
-	},
-});
+const formats = ['cjs', 'esm'];
+
+await Promise.all(
+	formats.map((format) => {
+		return esbuild.build({
+			...buildOptionsBase,
+			format,
+			outExtension: {
+				'.js': format === 'esm' ? '.mjs' : '.cjs',
+			},
+		});
+	}),
+);
+
+const cjsDeclarationFiles = async (directoryPath) => {
+	const entries = await readdir(directoryPath, {
+		withFileTypes: true,
+		recursive: true,
+	});
+
+	await Promise.all(
+		entries
+			.filter((entry) => {
+				return entry.isFile() && entry.name.endsWith('.d.ts');
+			})
+			.map(async (file) => {
+				const name = join(file.path, file.name);
+				const newName = name.slice(0, -2) + 'cts';
+
+				const contents = await readFile(name, { encoding: 'utf-8' });
+				await writeFile(
+					newName,
+					contents.replace(/(?<=\.)js(?=['"])/g, 'cjs'),
+				);
+			}),
+	);
+};
+
+await cjsDeclarationFiles(outdir);

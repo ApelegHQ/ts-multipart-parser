@@ -66,7 +66,7 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 								value.buffer,
 								value.byteOffset,
 								value.byteLength,
-						  )
+							)
 						: new Uint8Array(value),
 				);
 			}
