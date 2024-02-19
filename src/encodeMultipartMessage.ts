@@ -195,30 +195,41 @@ const encodeMultipartMessage = (
 	const reader = transformStream.readable.getReader();
 
 	const readableStream = new ReadableStream<ArrayBuffer>({
-		async pull(controller) {
-			return Promise.all([
-				!finishedEncoding && asyncEncoder.next(),
-				reader.read(),
-			]).then(async ([encodingResult, readResult]) => {
-				if (encodingResult && encodingResult.done) {
-					finishedEncoding = true;
-					await transformStream.writable.close();
-				}
+		start(controller) {
+			(async () => {
+				for (;;) {
+					try {
+						const readResult = await reader.read();
+						if (readResult.done) {
+							const terminator = new Uint8Array([0x0d, 0x0a]);
+							controller.enqueue(
+								terminator.buffer.slice(
+									terminator.byteOffset,
+									terminator.byteOffset +
+										terminator.byteLength,
+								),
+							);
+							controller.close();
+							return;
+						}
 
-				if (readResult.done) {
-					const terminator = new Uint8Array([0x0d, 0x0a]);
-					controller.enqueue(
-						terminator.buffer.slice(
-							terminator.byteOffset,
-							terminator.byteOffset + terminator.byteLength,
-						),
-					);
-					controller.close();
-					return;
+						controller.enqueue(readResult.value);
+					} catch (readError) {
+						console.error('Read error:', readError);
+						controller.error(readError);
+						return;
+					}
 				}
+			})().catch(() => {});
+		},
+		async pull() {
+			if (finishedEncoding) return;
 
-				controller.enqueue(readResult.value);
-			});
+			const encodingResult = await asyncEncoder.next();
+			if (encodingResult.done) {
+				finishedEncoding = true;
+				await transformStream.writable.close();
+			}
 		},
 	});
 
