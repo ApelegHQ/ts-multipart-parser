@@ -79,7 +79,7 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 					boundaryIndex =
 						findIndex(buffer, boundaryDelimiter.slice(2)) - 2;
 
-					if (boundaryIndex === -3) {
+					if (boundaryIndex === -3 && !done) {
 						// If the boundary isn't found in the current buffer, we
 						// need to read more data
 						break;
@@ -90,7 +90,7 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 					boundaryIndex = findIndex(buffer, boundaryDelimiter);
 				}
 
-				if (boundaryIndex === -1) {
+				if (boundaryIndex === -1 && !done) {
 					// If the boundary isn't found in the current buffer, we need to read more data
 					break;
 				}
@@ -122,12 +122,6 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 							),
 						).every((v) => LWSPchar.includes(v))
 					) {
-						console.error({
-							b: Buffer.from(buffer).toString(),
-							l: buffer.length,
-							nextIndex,
-							x: buffer.length - nextIndex,
-						});
 						throw new Error(
 							`Invalid boundary at index ${boundaryIndex}`,
 						);
