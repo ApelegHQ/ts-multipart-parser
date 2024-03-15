@@ -25,8 +25,6 @@ export type TDecodedMultipartMessage = {
 	parts?: TIterable<TDecodedMultipartMessage>;
 };
 
-const textEncoder = new TextEncoder();
-
 export const liberalBoundaryMatchRegex = /;\s*boundary=(?:"([^"]+)"|([^;",]+))/;
 
 const multipartBoundaryAlphabet =
@@ -55,6 +53,7 @@ async function* asyncEncoderGenerator(
 	msg: TIterable<TDecodedMultipartMessage>,
 	ws: WritableStream,
 ): AsyncGenerator<void> {
+	const textEncoder = new TextEncoder();
 	const encodedBoundary = textEncoder.encode(`\r\n--${boundary}`);
 
 	if (Array.isArray(msg) && msg.length < 1) {
@@ -215,7 +214,6 @@ const encodeMultipartMessage = (
 
 						controller.enqueue(readResult.value);
 					} catch (readError) {
-						console.error('Read error:', readError);
 						controller.error(readError);
 						return;
 					}

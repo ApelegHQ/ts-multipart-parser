@@ -27,11 +27,6 @@ enum EState {
 	EPILOGUE,
 }
 
-const textEncoder = new TextEncoder();
-
-const newline = textEncoder.encode('\r\n');
-const LWSPchar = [0x09, 0x20];
-
 export type TMultipartMessage = {
 	headers: Headers;
 	body?: Uint8Array | null;
@@ -47,10 +42,15 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 		throw new Error('Invalid boundary delimiter');
 	}
 
+	const textEncoder = new TextEncoder();
+	const LWSPchar = [0x09, 0x20];
+	const newline = new Uint8Array([0x0d, 0x0a]); // '\r\n'
+
 	const boundaryDelimiter = textEncoder.encode(`\r\n--${boundary}`);
 
 	let buffer = new Uint8Array();
 	let state: EState = EState.PREAMBLE;
+	let eosReached = false;
 
 	const reader = stream.getReader();
 
@@ -58,7 +58,12 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 		while (state !== EState.EPILOGUE) {
 			const { done, value } = await reader.read();
 
-			if (!done) {
+			if (done) {
+				if (buffer.length === 0 || eosReached) {
+					throw new Error('Invalid message');
+				}
+				eosReached = true;
+			} else {
 				buffer = mergeTypedArrays(
 					buffer,
 					ArrayBuffer.isView(value)
@@ -71,7 +76,7 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 				);
 			}
 
-			while (buffer.length) {
+			while (buffer.length > 0) {
 				let boundaryIndex: number = NaN;
 
 				if (state === EState.PREAMBLE) {
@@ -79,7 +84,7 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 					boundaryIndex =
 						findIndex(buffer, boundaryDelimiter.slice(2)) - 2;
 
-					if (boundaryIndex === -3 && !done) {
+					if (boundaryIndex === -3) {
 						// If the boundary isn't found in the current buffer, we
 						// need to read more data
 						break;
@@ -90,7 +95,7 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 					boundaryIndex = findIndex(buffer, boundaryDelimiter);
 				}
 
-				if (boundaryIndex === -1 && !done) {
+				if (boundaryIndex === -1) {
 					// If the boundary isn't found in the current buffer, we need to read more data
 					break;
 				}
@@ -100,32 +105,29 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 				// Transport padding
 				// Maximum acceptable transport padding
 				// set to 32 bytes
-				const nextIndexCRLF = findIndex(
-					buffer.subarray(nextIndex, nextIndex + 32),
-					newline,
-				);
-
-				if (!done) {
-					if (
-						nextIndexCRLF === -1 &&
-						buffer.length - nextIndex < 32
-					) {
-						break;
-					}
-
-					if (
-						nextIndexCRLF === -1 ||
-						!Array.from(
-							buffer.subarray(
-								nextIndex + Math.min(2, nextIndexCRLF),
-								nextIndex + nextIndexCRLF,
-							),
-						).every((v) => LWSPchar.includes(v))
-					) {
-						throw new Error(
-							`Invalid boundary at index ${boundaryIndex}`,
+				const nextIndexCRLF = done
+					? 0
+					: findIndex(
+							buffer.subarray(nextIndex, nextIndex + 32),
+							newline,
 						);
-					}
+
+				if (nextIndexCRLF === -1 && buffer.length - nextIndex < 32) {
+					break;
+				}
+
+				if (
+					nextIndexCRLF === -1 ||
+					!Array.from(
+						buffer.subarray(
+							nextIndex + Math.min(2, nextIndexCRLF),
+							nextIndex + nextIndexCRLF,
+						),
+					).every((v) => LWSPchar.includes(v))
+				) {
+					throw new Error(
+						`Invalid boundary at index ${boundaryIndex}`,
+					);
 				}
 
 				// Possibly reached the end of the multipart message
@@ -145,7 +147,7 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 						throw new Error(
 							`Invalid boundary at index ${boundaryIndex} (${boundary}): ${buffer[
 								nextIndex + 1
-							].toString(16)}`,
+							]?.toString(16)}`,
 						);
 					}
 				}
@@ -207,10 +209,6 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 				if (state === EState.EPILOGUE) {
 					buffer = buffer.subarray(buffer.length);
 					break;
-				}
-
-				if (done) {
-					throw new Error('Invalid message');
 				}
 
 				buffer = buffer.subarray(nextIndexCRLF + nextIndex + 2);
