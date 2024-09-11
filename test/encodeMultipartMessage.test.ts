@@ -1,4 +1,4 @@
-/* Copyright © 2023 Exact Realty Limited.
+/* Copyright © 2023 Apeleg Limited.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -21,9 +21,10 @@ import encoder, {
 } from '../src/encodeMultipartMessage.js';
 import createBufferStream from '../src/lib/createBufferStream.js';
 
-!globalThis.crypto &&
-	((() => globalThis || { crypto: {} })().crypto =
-		webcrypto as unknown as Crypto);
+if (!globalThis.crypto) {
+	(() => globalThis || { crypto: {} })().crypto =
+		webcrypto as unknown as Crypto;
+}
 
 const textEncoder = new TextEncoder();
 

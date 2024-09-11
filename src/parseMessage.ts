@@ -1,4 +1,4 @@
-/* Copyright © 2023 Exact Realty Limited.
+/* Copyright © 2023 Apeleg Limited.
  *
  * All rights reserved.
  *

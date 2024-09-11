@@ -5,7 +5,7 @@
  [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Exact-Realty_ts-multipart-parser&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Exact-Realty_ts-multipart-parser)
  [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Exact-Realty_ts-multipart-parser&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Exact-Realty_ts-multipart-parser)
  [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Exact-Realty_ts-multipart-parser&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Exact-Realty_ts-multipart-parser)
- ![NPM Downloads](https://img.shields.io/npm/dw/@exact-realty/multipart-parser?style=flat-square)
+ ![NPM Downloads](https://img.shields.io/npm/dw/@apeleghq/multipart-parser?style=flat-square)
 
 This is a library for parsing MIME multipart messages, such as those used in
 HTTP requests and email messages, written in TypeScript. It provides an
@@ -26,11 +26,11 @@ part in a multipart message. Nested multipart messages are supported.
 You can install the library using either `npm` or `yarn`:
 
 ```sh
-npm install @exact-realty/multipart-parser
+npm install @apeleghq/multipart-parser
 ```
 
 ```sh
-yarn add @exact-realty/multipart-parser
+yarn add @apeleghq/multipart-parser
 ```
 
 ## 🎬 Usage
@@ -79,7 +79,7 @@ This function takes a boundary string and an array of messages as arguments and 
 ### Example
 
 ```js
-import { parseMultipartMessage } from '@exact-realty/multipart-message-parser';
+import { parseMultipartMessage } from '@apeleghq/multipart-message-parser';
 
 const decoder = new TextDecoder();
 
