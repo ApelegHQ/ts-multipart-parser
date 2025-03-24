@@ -1,0 +1,23 @@
+name: Run tests before merging
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    branches:
+      - master
+
+jobs:
+  ubuntu:
+    name: 'Ubuntu (Node 22)'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
