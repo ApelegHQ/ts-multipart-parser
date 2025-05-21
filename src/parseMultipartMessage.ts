@@ -37,6 +37,7 @@ export type TMultipartMessageGenerator = AsyncGenerator<TMultipartMessage>;
 async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 	stream: ReadableStream<T>,
 	boundary: string,
+	headersTransform?: (headers: [name: string, value: string][]) => Headers,
 ): TMultipartMessageGenerator {
 	if (!boundaryRegex.test(boundary)) {
 		throw new Error('Invalid boundary delimiter');
@@ -165,7 +166,10 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 							buffer.subarray(boundaryIndex, nextIndex).length > 0
 						) {
 							const part = buffer.subarray(0, boundaryIndex);
-							const parsedPart = parseMessage(part);
+							const parsedPart = parseMessage(
+								part,
+								headersTransform,
+							);
 
 							const partContentType =
 								parsedPart.headers.get('content-type');
@@ -211,6 +215,22 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 					break;
 				}
 
+				console.error(
+					'@@@@219',
+					state,
+					done,
+					nextIndexCRLF,
+					nextIndex,
+					{
+						a: Buffer.from(buffer)
+							.subarray(0, nextIndexCRLF + nextIndex + 2)
+							.toString(),
+						b: Buffer.from(buffer)
+							.subarray(nextIndexCRLF + nextIndex + 2)
+							.toString(),
+						f: Buffer.from(buffer).toString(),
+					},
+				);
 				buffer = buffer.subarray(nextIndexCRLF + nextIndex + 2);
 			}
 		}

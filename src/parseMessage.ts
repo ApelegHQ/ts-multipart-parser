@@ -24,7 +24,10 @@ export type TMessage = {
 	body: Uint8Array | null;
 };
 
-const parseMessage = (buffer: Uint8Array): TMessage => {
+const parseMessage = (
+	buffer: Uint8Array,
+	headersTransform?: (headers: [name: string, value: string][]) => Headers,
+): TMessage => {
 	let nextIndex = 0;
 
 	const headersArray: [string, string][] = [];
@@ -59,14 +62,18 @@ const parseMessage = (buffer: Uint8Array): TMessage => {
 		buffer = buffer.subarray(nextIndex + newline.length);
 	}
 
-	const headers = new Headers(headersArray);
-
-	if (!headers.has('content-transfer-encoding')) {
-		headers.set('content-transfer-encoding', '7bit');
-	}
-	if (!headers.has('content-type')) {
-		headers.set('content-type', 'text/plain; charset=us-ascii');
-	}
+	const headers = headersTransform
+		? headersTransform(headersArray)
+		: (() => {
+				const headers = new Headers(headersArray);
+				if (!headers.has('content-transfer-encoding')) {
+					headers.set('content-transfer-encoding', '7bit');
+				}
+				if (!headers.has('content-type')) {
+					headers.set('content-type', 'text/plain; charset=us-ascii');
+				}
+				return headers;
+			})();
 
 	return {
 		headers: headers,

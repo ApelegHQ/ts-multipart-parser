@@ -16,9 +16,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { boundaryMatchRegex } from '../src/lib/boundaryRegex.js';
-import parse, {
-	TMultipartMessageGenerator,
-} from '../src/parseMultipartMessage.js';
+import type { TT } from './utils.js';
+import { extractParts } from './utils.js';
 
 const testVectors: {
 	name: string;
@@ -249,61 +248,6 @@ stset
 		],
 	},
 ];
-
-const textDecoder = new TextDecoder();
-
-const newLineToCRLF = (str: string) =>
-	str.replace(/\r(?!n)|(?<!\r)\n/g, '\r\n');
-
-const createStringStream = (str: string, chunkSize?: number) => {
-	const encoder = new TextEncoder();
-	const buffer = encoder.encode(str);
-	const cs = !chunkSize ? str.length : chunkSize;
-	let pos = 0;
-
-	const readableStream = new ReadableStream({
-		pull(controller) {
-			controller.enqueue(buffer.subarray(pos, pos + cs));
-			pos += cs;
-			if (pos >= str.length) {
-				controller.close();
-			}
-		},
-	});
-	return readableStream;
-};
-
-type TT = {
-	h: Record<string, string>;
-	b?: string;
-	p?: TT[];
-};
-
-const extractParts = (testVector: string, boundary: string) => {
-	const result = parse(
-		createStringStream(newLineToCRLF(testVector), 4),
-		boundary,
-	);
-
-	const inner = async (result: TMultipartMessageGenerator): Promise<TT[]> => {
-		const parts: TT[] = [];
-
-		for await (const part of result) {
-			const hh: [string, string][] = [];
-			part.headers.forEach((v, k) => hh.push([k, v]));
-
-			parts.push({
-				h: Object.fromEntries(hh),
-				...(part.body && { b: textDecoder.decode(part.body) }),
-				...(part.parts && { p: await inner(part.parts) }),
-			});
-		}
-
-		return parts;
-	};
-
-	return inner(result);
-};
 
 const runTest = async (
 	testVector: string,

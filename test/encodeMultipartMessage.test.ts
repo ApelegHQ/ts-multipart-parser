@@ -20,13 +20,12 @@ import encoder, {
 	TDecodedMultipartMessage,
 } from '../src/encodeMultipartMessage.js';
 import createBufferStream from '../src/lib/createBufferStream.js';
+import { newLineToCRLF, textEncoder } from './utils.js';
 
 if (!globalThis.crypto) {
 	(() => globalThis || { crypto: {} })().crypto =
 		webcrypto as unknown as Crypto;
 }
-
-const textEncoder = new TextEncoder();
 
 const testVectors: {
 	name: string;
@@ -207,9 +206,6 @@ Content-Type: image/example
 		],
 	},
 ];
-
-const newLineToCRLF = (str: string) =>
-	str.replace(/\r(?!n)|(?<!\r)\n/g, '\r\n');
 
 const runTest = async (
 	boundary: string,
