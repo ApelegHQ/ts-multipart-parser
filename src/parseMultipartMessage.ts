@@ -215,22 +215,6 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 					break;
 				}
 
-				console.error(
-					'@@@@219',
-					state,
-					done,
-					nextIndexCRLF,
-					nextIndex,
-					{
-						a: Buffer.from(buffer)
-							.subarray(0, nextIndexCRLF + nextIndex + 2)
-							.toString(),
-						b: Buffer.from(buffer)
-							.subarray(nextIndexCRLF + nextIndex + 2)
-							.toString(),
-						f: Buffer.from(buffer).toString(),
-					},
-				);
 				buffer = buffer.subarray(nextIndexCRLF + nextIndex + 2);
 			}
 		}
