@@ -13,10 +13,11 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-import type { TTypedArray } from '../types/index.js';
-
 // Helper function to find the index of a Uint8Array within another Uint8Array
-const findIndex = <T extends TTypedArray>(buffer: T, delimiter: T): number => {
+const findIndex = <T>(
+	buffer: ArrayLike<T>,
+	delimiter: ArrayLike<T>,
+): number => {
 	outerLoop: for (let i = 0; i <= buffer.length - delimiter.length; i++) {
 		for (let j = 0; j < delimiter.length; j++) {
 			if (buffer[i + j] !== delimiter[j]) {

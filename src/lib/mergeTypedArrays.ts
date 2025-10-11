@@ -11,21 +11,19 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-import type { TTypedArray } from '../types/index.js';
-
-const mergeTypedArrays = <T extends TTypedArray>(
+const mergeTypedArrays = <T extends AllowSharedBufferSource>(
 	input0: T,
-	...input: T[]
+	...input: AllowSharedBufferSource[]
 ): T => {
 	const length = input.reduce(
 		(acc, cv) => acc + cv.byteLength,
-		input0.length,
+		input0.byteLength,
 	);
 
-	const mergedArray = new (Object(input[0]).constructor)(length);
+	const mergedArray = new (Object(input0).constructor)(length);
 	mergedArray.set(input0);
 
-	let offset = input0.length;
+	let offset = input0.byteLength;
 	input.forEach((item) => {
 		mergedArray.set(item, offset);
 		offset += item.byteLength;

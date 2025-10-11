@@ -15,13 +15,12 @@
 
 import { boundaryMatchRegex } from './lib/boundaryRegex.js';
 import createBufferStream from './lib/createBufferStream.js';
-import type { TTypedArray } from './types/index.js';
 
 type TIterable<T> = AsyncIterable<T> | Iterable<T>;
 
 export type TDecodedMultipartMessage = {
 	headers: Headers;
-	body?: TTypedArray | ArrayBuffer | Blob | ReadableStream | null;
+	body?: BufferSource | Blob | ReadableStream | null;
 	parts?: TIterable<TDecodedMultipartMessage>;
 };
 

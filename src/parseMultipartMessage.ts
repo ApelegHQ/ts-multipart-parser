@@ -18,7 +18,6 @@ import createBufferStream from './lib/createBufferStream.js';
 import findIndex from './lib/findIndex.js';
 import mergeTypedArrays from './lib/mergeTypedArrays.js';
 import parseMessage from './parseMessage.js';
-import type { TTypedArray } from './types/index.js';
 
 enum EState {
 	PREAMBLE,
@@ -34,8 +33,8 @@ export type TMultipartMessage = {
 };
 export type TMultipartMessageGenerator = AsyncGenerator<TMultipartMessage>;
 
-async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
-	stream: ReadableStream<T>,
+async function* parseMultipartMessage(
+	stream: ReadableStream<ArrayBufferLike>,
 	boundary: string,
 	headersTransform?: (headers: [name: string, value: string][]) => Headers,
 ): TMultipartMessageGenerator {
@@ -65,7 +64,7 @@ async function* parseMultipartMessage<T extends TTypedArray | ArrayBuffer>(
 				}
 				eosReached = true;
 			} else {
-				buffer = mergeTypedArrays(
+				buffer = mergeTypedArrays<typeof buffer>(
 					buffer,
 					ArrayBuffer.isView(value)
 						? new Uint8Array(

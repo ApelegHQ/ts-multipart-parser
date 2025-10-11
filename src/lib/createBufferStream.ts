@@ -13,10 +13,8 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-import type { TTypedArray } from '../types/index.js';
-
-const createBufferStream = <T extends TTypedArray | ArrayBuffer>(buffer: T) => {
-	const readableStream = new ReadableStream<ArrayBuffer>({
+const createBufferStream = (buffer: AllowSharedBufferSource) => {
+	const readableStream = new ReadableStream<ArrayBufferLike>({
 		pull(controller) {
 			if (ArrayBuffer.isView(buffer)) {
 				controller.enqueue(
