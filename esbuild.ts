@@ -63,7 +63,7 @@ const cjsDeclarationFiles = async (directoryPath: string) => {
 				return entry.isFile() && entry.name.endsWith('.d.ts');
 			})
 			.map(async (file) => {
-				const name = join(file.path, file.name);
+				const name = join(file.parentPath, file.name);
 				const newName = name.slice(0, -2) + 'cts';
 
 				const contents = await readFile(name, { encoding: 'utf-8' });

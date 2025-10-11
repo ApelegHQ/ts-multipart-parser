@@ -1,6 +1,6 @@
 {
 	"name": "@apeleghq/multipart-parser",
-	"version": "1.0.18",
+	"version": "1.0.19",
 	"description": "TypeScript streaming parser for MIME multipart messages",
 	"main": "dist/index.cjs",
 	"types": "./dist/index.d.cts",
@@ -76,17 +76,17 @@
 	"keywords": ["form-data", "formdata", "mime", "mime", "multipart", "multipart/form-data", "multipart/mixed", "multipart/related", "parser", "rfc2046", "rfc2388", "rfc7568"],
 	"devDependencies": {
 		"@eslint/eslintrc": "^3.3.1",
-		"@eslint/js": "^9.27.0",
-		"@types/node": "^22.15.21",
-		"@typescript-eslint/eslint-plugin": "^8.32.1",
-		"@typescript-eslint/parser": "^8.32.1",
-		"esbuild": "^0.25.4",
-		"eslint": "^9.27.0",
-		"eslint-config-prettier": "^10.1.5",
-		"eslint-plugin-prettier": "^5.4.0",
-		"globals": "^16.1.0",
-		"prettier": "^3.5.3",
+		"@eslint/js": "^9.37.0",
+		"@types/node": "^24.7.2",
+		"@typescript-eslint/eslint-plugin": "^8.46.0",
+		"@typescript-eslint/parser": "^8.46.0",
+		"esbuild": "^0.25.10",
+		"eslint": "^9.37.0",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-prettier": "^5.5.4",
+		"globals": "^16.4.0",
+		"prettier": "^3.6.2",
 		"ts-node": "^10.9.2",
-		"typescript": "^5.8.3"
+		"typescript": "^5.9.3"
 	}
 }
