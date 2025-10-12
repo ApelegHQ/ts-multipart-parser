@@ -84,4 +84,16 @@ export default [
 			],
 		},
 	},
+	{
+		files: ['**/*.json'],
+		rules: {
+			'@typescript-eslint/no-unused-expressions': 'off',
+		},
+	},
+	{
+		files: ['**/*.cjs'],
+		rules: {
+			'@typescript-eslint/no-require-imports': 'off',
+		},
+	},
 ];

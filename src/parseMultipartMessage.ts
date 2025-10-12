@@ -16,7 +16,9 @@
 import { boundaryMatchRegex, boundaryRegex } from './lib/boundaryRegex.js';
 import createBufferStream from './lib/createBufferStream.js';
 import findIndex from './lib/findIndex.js';
+import isLWSP from './lib/isLWSP.js';
 import mergeTypedArrays from './lib/mergeTypedArrays.js';
+import ParseError from './lib/ParseError.js';
 import parseMessage from './parseMessage.js';
 
 enum EState {
@@ -39,12 +41,11 @@ async function* parseMultipartMessage(
 	headersTransform?: (headers: [name: string, value: string][]) => Headers,
 ): TMultipartMessageGenerator {
 	if (!boundaryRegex.test(boundary)) {
-		throw new Error('Invalid boundary delimiter');
+		throw new ParseError('Invalid boundary delimiter');
 	}
 
 	const textEncoder = new TextEncoder();
-	const LWSPchar = [0x09, 0x20];
-	const newline = new Uint8Array([0x0d, 0x0a]); // '\r\n'
+	const newline = [0x0d, 0x0a]; // '\r\n'
 
 	const boundaryDelimiter = textEncoder.encode(`\r\n--${boundary}`);
 
@@ -60,7 +61,7 @@ async function* parseMultipartMessage(
 
 			if (done) {
 				if (buffer.length === 0 || eosReached) {
-					throw new Error('Invalid message');
+					throw new ParseError('Invalid message');
 				}
 				eosReached = true;
 			} else {
@@ -123,9 +124,9 @@ async function* parseMultipartMessage(
 							nextIndex + Math.min(2, nextIndexCRLF),
 							nextIndex + nextIndexCRLF,
 						),
-					).every((v) => LWSPchar.includes(v))
+					).every((v) => isLWSP(v))
 				) {
-					throw new Error(
+					throw new ParseError(
 						`Invalid boundary at index ${boundaryIndex}`,
 					);
 				}
@@ -141,10 +142,10 @@ async function* parseMultipartMessage(
 					) {
 						state = EState.EPILOGUE;
 					} else if (
-						!LWSPchar.includes(buffer[nextIndex + 0]) ||
-						!LWSPchar.includes(buffer[nextIndex + 1])
+						!isLWSP(buffer[nextIndex + 0]) ||
+						!isLWSP(buffer[nextIndex + 1])
 					) {
-						throw new Error(
+						throw new ParseError(
 							`Invalid boundary at index ${boundaryIndex} (${boundary}): ${buffer[
 								nextIndex + 1
 							]?.toString(16)}`,

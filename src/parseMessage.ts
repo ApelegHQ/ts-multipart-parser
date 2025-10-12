@@ -12,12 +12,12 @@
  */
 
 import findIndex from './lib/findIndex.js';
+import isLWSP from './lib/isLWSP.js';
+import ParseError from './lib/ParseError.js';
 
 const textDecoder = new TextDecoder();
-const textEncoder = new TextEncoder();
 
-const newline = textEncoder.encode('\r\n');
-const LWSPchar = [0x09, 0x20];
+const newline = [0x0d, 0x0a]; // '\r\n'
 
 export type TMessage = {
 	headers: Headers;
@@ -38,13 +38,13 @@ const parseMessage = (
 
 		const sep = buffer.indexOf(0x3a);
 		if (sep === -1) {
-			throw new Error('Invalid header');
+			throw new ParseError('Invalid header');
 		}
 
 		const name = textDecoder.decode(buffer.subarray(0, sep));
 
 		// Multi-line headers
-		while (LWSPchar.includes(buffer[nextIndex + 2])) {
+		while (isLWSP(buffer[nextIndex + 2])) {
 			const nl = findIndex(buffer.subarray(nextIndex + 2), newline);
 			if (nl < 1) {
 				break;

@@ -1,4 +1,4 @@
-/* Copyright © 2023 Apeleg Limited.
+/* Copyright © 2025 Apeleg Limited. All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -13,15 +13,4 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-export { default as encodeMultipartMessage } from './encodeMultipartMessage.js';
-export type { TDecodedMultipartMessage } from './encodeMultipartMessage.js';
-export { boundaryMatchRegex, boundaryRegex } from './lib/boundaryRegex.js';
-export { default as EncodeError } from './lib/EncodeError.js';
-export { default as ParseError } from './lib/ParseError.js';
-export { default as parseMessage } from './parseMessage.js';
-export type { TMessage } from './parseMessage.js';
-export type * from './parseMultipartMessage.js';
-export {
-	default,
-	default as parseMultipartMessage,
-} from './parseMultipartMessage.js';
+export default class ParseError extends Error {}

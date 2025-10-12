@@ -15,16 +15,38 @@
 
 import { boundaryMatchRegex } from './lib/boundaryRegex.js';
 import createBufferStream from './lib/createBufferStream.js';
+import EncodeError from './lib/EncodeError.js';
 
 type TIterable<T> = AsyncIterable<T> | Iterable<T>;
 
-export type TDecodedMultipartMessage = {
-	headers: Headers;
-	body?: BufferSource | Blob | ReadableStream | null;
-	parts?: TIterable<TDecodedMultipartMessage>;
+type TBaseDecodedMultipartMessage = {
+	['headers']?: Headers;
+};
+type TDecodedMultipartMessageWithBody = TBaseDecodedMultipartMessage & {
+	['body']: BufferSource | Blob | ReadableStream | null;
+};
+type TDecodedMultipartMessageWithParts = TBaseDecodedMultipartMessage & {
+	['parts']: TIterable<TDecodedMultipartMessage>;
 };
 
+export type TDecodedMultipartMessage =
+	| TBaseDecodedMultipartMessage
+	| TDecodedMultipartMessageWithBody
+	| TDecodedMultipartMessageWithParts;
+
 export const liberalBoundaryMatchRegex = /;\s*boundary=(?:"([^"]+)"|([^;",]+))/;
+
+const isWithParts = (
+	x: TDecodedMultipartMessage,
+): x is TDecodedMultipartMessageWithParts => {
+	return !!(x as TDecodedMultipartMessageWithParts).parts;
+};
+
+const isWithBody = (
+	x: TDecodedMultipartMessage,
+): x is TDecodedMultipartMessageWithBody => {
+	return (x as TDecodedMultipartMessageWithBody).body != null;
+};
 
 const multipartBoundaryAlphabet =
 	'ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
@@ -56,7 +78,7 @@ async function* asyncEncoderGenerator(
 	const encodedBoundary = textEncoder.encode(`\r\n--${boundary}`);
 
 	if (Array.isArray(msg) && msg.length < 1) {
-		await ws.abort(Error('At least one part is required'));
+		await ws.abort(new EncodeError('At least one part is required'));
 		return;
 	}
 
@@ -69,8 +91,8 @@ async function* asyncEncoderGenerator(
 
 		// First, do some validation in case a multipart message
 		// needs to be encoded
-		if (!part.body && part.parts) {
-			partContentType = part.headers.get('content-type');
+		if (isWithParts(part)) {
+			partContentType = part.headers?.get('content-type');
 
 			if (!partContentType) {
 				subBoundary = generateMultipartBoundary();
@@ -80,7 +102,9 @@ async function* asyncEncoderGenerator(
 				!liberalBoundaryMatchRegex.test(partContentType)
 			) {
 				await ws.abort(
-					Error('Invalid multipart content type: ' + partContentType),
+					new EncodeError(
+						'Invalid multipart content type: ' + partContentType,
+					),
 				);
 				return;
 			} else {
@@ -110,7 +134,7 @@ async function* asyncEncoderGenerator(
 			const hh: string[] = [''];
 			if (partContentType) {
 				let seenContentType = false;
-				part.headers.forEach((v, k) => {
+				part.headers?.forEach((v, k) => {
 					if (k !== 'content-type') {
 						hh.push(`${k}: ${v}`);
 					} else {
@@ -121,13 +145,13 @@ async function* asyncEncoderGenerator(
 				if (!seenContentType) {
 					hh.push(`content-type: ${partContentType}`);
 				}
-			} else {
+			} else if (part.headers) {
 				part.headers.forEach((v, k) => {
 					hh.push(`${k}: ${v}`);
 				});
 			}
 
-			if (part.parts || !part.body) {
+			if (isWithParts(part)) {
 				hh.push('');
 			} else {
 				hh.push('', '');
@@ -140,7 +164,7 @@ async function* asyncEncoderGenerator(
 
 		// Now, we'll either send a body, if there is one, or construct
 		// a multipart submessage
-		if (part.body) {
+		if (isWithBody(part)) {
 			if (
 				part.body instanceof ArrayBuffer ||
 				ArrayBuffer.isView(part.body)
@@ -151,14 +175,16 @@ async function* asyncEncoderGenerator(
 			} else if (part.body instanceof ReadableStream) {
 				await part.body.pipeTo(ws, pipeToOptions);
 			} else {
-				await ws.abort(Error('Invalid body type'));
+				await ws.abort(new EncodeError('Invalid body type'));
 				return;
 			}
 			yield;
-		} else if (part.parts) {
+		} else if (isWithParts(part)) {
 			if (!subBoundary) {
 				await ws.abort(
-					Error('Runtime exception: undefined part boundary'),
+					new EncodeError(
+						'Runtime exception: undefined part boundary',
+					),
 				);
 				return;
 			}

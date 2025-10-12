@@ -13,5 +13,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+export { default as ParseError } from '../lib/ParseError.js';
 export { default, default as parseMessage } from '../parseMessage.js';
 export type { TMessage } from '../parseMessage.js';

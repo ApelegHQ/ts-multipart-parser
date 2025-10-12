@@ -47,6 +47,10 @@ await Promise.all(
 			outExtension: {
 				'.js': format === 'esm' ? '.mjs' : '.cjs',
 			},
+			define: {
+				...buildOptionsBase.define,
+				'import.meta.format': JSON.stringify(format),
+			},
 		});
 	}),
 );

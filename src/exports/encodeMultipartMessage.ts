@@ -18,3 +18,4 @@ export {
 	default as encodeMultipartMessage,
 } from '../encodeMultipartMessage.js';
 export type { TDecodedMultipartMessage } from '../encodeMultipartMessage.js';
+export { default as EncodeError } from '../lib/EncodeError.js';

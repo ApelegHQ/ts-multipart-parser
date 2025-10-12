@@ -20,6 +20,6 @@
 	"ts-node": {
 		"experimentalResolver": true
 	},
-	"include": ["src/**/*"],
+	"include": ["src/**/*", "@types/*.d.ts"],
 	"exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts"]
 }

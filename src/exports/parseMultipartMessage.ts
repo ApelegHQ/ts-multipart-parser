@@ -13,8 +13,8 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-export type * from '../parseMultipartMessage.js';
 export {
 	default,
 	default as parseMultipartMessage,
 } from '../parseMultipartMessage.js';
+export * from './parseMessage.js';
