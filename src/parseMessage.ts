@@ -24,6 +24,57 @@ export type TMessage = {
 	body: Uint8Array | null;
 };
 
+/**
+ * Parses a single message or message part from a byte buffer into its
+ * constituent headers and body.
+ *
+ * This function processes a `Uint8Array` representing a message, such as a
+ * part from a `multipart/*` payload or a simple email-style message. It reads
+ * headers line-by-line, handling multi-line header values folded with linear
+ * whitespace, until it encounters the empty line (`CRLF`) that separates the
+ * headers from the message body. The remainder of the buffer is returned as the
+ * body.
+ *
+ * If a custom `headersTransform` function is not provided, default headers for
+ * `Content-Type` ('text/plain; charset=us-ascii') and `Content-Transfer-Encoding`
+ * ('7bit') are added if they are not already present in the parsed headers.
+ *
+ * @example
+ * ```javascript
+ * const messageString = [
+ *   'Content-Type: text/plain; charset=utf-8',
+ *   'X-Custom-Header: Some Value',
+ *   '', // Separator line
+ *   'This is the body of the message.',
+ * ].join('\r\n');
+ *
+ * const encoder = new TextEncoder();
+ * const buffer = encoder.encode(messageString);
+ *
+ * const { headers, body } = parseMessage(buffer);
+ *
+ * console.log(headers.get('content-type'));
+ * if (body) {
+ *   console.log(new TextDecoder().decode(body));
+ * }
+ *
+ * // Expected output:
+ * // text/plain; charset=utf-8
+ * // This is the body of the message.
+ * ```
+ *
+ * @param buffer The `Uint8Array` containing the raw message data to be parsed.
+ * @param headersTransform An optional function to process the parsed headers.
+ * It receives an array of header tuples (`[name, value]`) and should return a
+ * standard `Headers` object. If omitted, a `Headers` object is created with
+ * default `Content-Type` and `Content-Transfer-Encoding` if they are missing.
+ * @returns An object containing the parsed `headers` as a `Headers` object
+ * and the `body` as a `Uint8Array`. If the message ends immediately after the
+ * headers, the body will be an empty `Uint8Array`. If the header/body separator
+ * is not found, `body` will be `null`.
+ * @throws {ParseError} Throws if a header line is encountered that does not
+ * contain a colon (`:`) separator.
+ */
 const parseMessage = (
 	buffer: Uint8Array,
 	headersTransform?: (headers: [name: string, value: string][]) => Headers,

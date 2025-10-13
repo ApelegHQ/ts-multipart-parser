@@ -1,8 +1,8 @@
 {
 	"compilerOptions": {
 		"target": "es2020",
-		"module": "esnext",
-		"moduleResolution": "node",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
 		"outDir": "dist",
 		"strict": true,
 		"strictNullChecks": true,
@@ -18,6 +18,10 @@
 		"typeRoots": ["./node_modules/@types", "./@types"]
 	},
 	"ts-node": {
+		"compilerOptions": {
+			"module": "ESNext",
+			"moduleResolution": "bundler"
+		},
 		"experimentalResolver": true
 	},
 	"include": ["src/**/*", "@types/*.d.ts"],

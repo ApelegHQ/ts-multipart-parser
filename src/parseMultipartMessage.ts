@@ -13,7 +13,8 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-import { boundaryMatchRegex, boundaryRegex } from './lib/boundaryRegex.js';
+import { parseMediaType } from '@apeleghq/http-media-type-negotiator/parseMediaType';
+import { boundaryRegex } from './lib/boundaryRegex.js';
 import createBufferStream from './lib/createBufferStream.js';
 import findIndex from './lib/findIndex.js';
 import isLWSP from './lib/isLWSP.js';
@@ -35,10 +36,93 @@ export type TMultipartMessage = {
 };
 export type TMultipartMessageGenerator = AsyncGenerator<TMultipartMessage>;
 
+/**
+ * Incrementally parses a `multipart/*` message from a readable stream.
+ *
+ * This async generator function reads from the provided stream and yields each
+ * part of the multipart message as it's parsed. It is designed to handle large
+ * messages efficiently by not buffering the entire message in memory.
+ *
+ * The parser can handle nested multipart content. If a part has a `Content-Type`
+ * of `multipart/*`, its `parts` property will be an async generator that can be
+ * consumed to parse the nested message.
+ *
+ * @example
+ * ```javascript
+ * async function runExample() {
+ *   const boundary = 'simple-boundary';
+ *   const multipartMessage = [
+ *     `--${boundary}`,
+ *     'Content-Type: text/plain',
+ *     '',
+ *     'This is the first part.',
+ *     `--${boundary}`,
+ *     'Content-Type: application/json',
+ *     '',
+ *     '{"key": "value"}',
+ *     `--${boundary}--`,
+ *   ].join('\r\n');
+ *
+ *   const stream = new ReadableStream({
+ *     start(controller) {
+ *       controller.enqueue(new TextEncoder().encode(multipartMessage));
+ *       controller.close();
+ *     },
+ *   });
+ *
+ *   try {
+ *     const textDecoder = new TextDecoder();
+ *     for await (const part of parseMultipartMessage(stream, boundary)) {
+ *       console.log('--- New Part ---');
+ *       console.log('Headers:', Object.fromEntries(part.headers.entries()));
+ *       if (part.body) {
+ *         console.log('Body:', textDecoder.decode(part.body));
+ *       }
+ *     }
+ *   } catch (error) {
+ *     console.error('Failed to parse multipart message:', error);
+ *   }
+ * }
+ *
+ * // Expected output:
+ * // --- New Part ---
+ * // Headers: {
+ * //   'content-transfer-encoding': '7bit',
+ * //   'content-type': 'text/plain'
+ * // }
+ * // Body: This is the first part.
+ * // --- New Part ---
+ * // Headers: {
+ * //   'content-transfer-encoding': '7bit',
+ * //   'content-type': 'text/application/json'
+ * // }
+ * // Body: {"key": "value"}
+ * ```
+ *
+ * @generator
+ * @yields An object representing a single part of the multipart message,
+ * containing `headers`, `body`, and an optional `parts` async generator for
+ * nested multipart content.
+ *
+ * @param stream The `ReadableStream` source for the multipart message. The
+ * stream should provide chunks of `ArrayBufferLike` data.
+ * @param boundary The boundary delimiter string that separates the message
+ * parts, as specified in the `Content-Type` header (without the leading `--`).
+ * @param headersTransform An optional function to process or transform the
+ * headers of each parsed part. It receives an array of `[name, value]` string
+ * tuples and should return a `Headers` object.
+ * @param permissive If `true`, the parser will be more lenient when parsing
+ * `Content-Type` headers within the parts. Defaults to `false`.
+ * @returns An async generator (`TMultipartMessageGenerator`) that yields each
+ * parsed message part.
+ * @throws {ParseError} Throws if the multipart message is malformed, such as
+ * having an invalid boundary delimiter or incorrect part separation.
+ */
 async function* parseMultipartMessage(
 	stream: ReadableStream<ArrayBufferLike>,
 	boundary: string,
 	headersTransform?: (headers: [name: string, value: string][]) => Headers,
+	permissive?: boolean,
 ): TMultipartMessageGenerator {
 	if (!boundaryRegex.test(boundary)) {
 		throw new ParseError('Invalid boundary delimiter');
@@ -171,24 +255,33 @@ async function* parseMultipartMessage(
 								headersTransform,
 							);
 
-							const partContentType =
-								parsedPart.headers.get('content-type');
-
 							let innerParts:
 								| TMultipartMessage['parts']
 								| undefined = undefined;
 
+							const partContentType =
+								parsedPart.headers.get('content-type');
+
+							const parsedPartContentType = partContentType
+								? parseMediaType(partContentType, permissive)
+								: null;
+
 							if (
 								parsedPart.body &&
-								partContentType?.startsWith('multipart/')
+								parsedPartContentType?.[0]
+									.toLowerCase()
+									.startsWith('multipart/')
 							) {
-								const partBoundaryMatch =
-									partContentType.match(boundaryMatchRegex);
+								const partBoundaryParam =
+									parsedPartContentType[1].find((param) => {
+										return (
+											param[0].toLowerCase() ===
+											'boundary'
+										);
+									});
 
-								if (partBoundaryMatch) {
-									const partBoundary =
-										partBoundaryMatch[1] ||
-										partBoundaryMatch[2];
+								if (partBoundaryParam) {
+									const partBoundary = partBoundaryParam[1];
 
 									innerParts = parseMultipartMessage(
 										createBufferStream(parsedPart.body),

@@ -34,7 +34,7 @@ const buildOptionsBase: esbuild.BuildOptions = {
 	minify: true,
 	entryNames: '[name]',
 	platform: 'node',
-	external: ['esbuild'],
+	external: ['@apeleghq/http-media-type-negotiator'],
 };
 
 const formats: esbuild.Format[] = ['cjs', 'esm'];

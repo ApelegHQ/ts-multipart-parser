@@ -30,12 +30,16 @@ async function fuzz(buf) {
 		);
 	const asStr = (b) => b.toString('utf8').replace(/\0/g, '') || 'x';
 	const randomBoundary = () => {
+		if (buf[2] === 0xff) return;
+
 		const a = asStr(slice(0, Math.max(1, buf[0] || 4)));
 		const b = asStr(slice(1, Math.max(1, buf[1] || 4)));
 		return `${a}-${b}-${Math.floor((buf[2] || 1) * 1000)}`;
 	};
 
 	async function* messages() {
+		if (buf[3] === 0xff) return; // no parts
+
 		const count = 1 + ((buf[3] || 0) % 6); // 1..6 messages
 		for (let m = 0; m < count; m++) {
 			const kind = (buf[4 + m] || 0) % 3;
@@ -58,11 +62,35 @@ async function fuzz(buf) {
 				};
 			} else {
 				// parts (single nested part) to keep it tiny
+				const shouldBeBlob = !!((0, Math.random)() > 0.8);
+				const shouldBeReadableStream =
+					!shouldBeBlob && !!((0, Math.random)() > 0.8);
+				const shouldBeInvalid =
+					!shouldBeBlob &&
+					!shouldBeReadableStream &&
+					!!((0, Math.random)() > 0.8);
+
+				const body = slice(40 + m * 8, 16).buffer.slice(0);
 				const sub = {
-					headers: headersTransform([['S', String(m)]]),
-					body: slice(40 + m * 8, 16).buffer.slice(0),
+					headers:
+						buf[0] & 0b10
+							? headersTransform([['S', String(m)]])
+							: undefined,
+					body: shouldBeBlob
+						? new Blob([body])
+						: shouldBeReadableStream
+							? new Response(body).body
+							: shouldBeInvalid
+								? Symbol('invalid-body')
+								: body,
 				};
-				yield { parts: [sub] };
+				yield {
+					headers:
+						buf[0] & 0b01
+							? headersTransform([['T', String(m)]])
+							: undefined,
+					parts: [sub],
+				};
 			}
 		}
 	}

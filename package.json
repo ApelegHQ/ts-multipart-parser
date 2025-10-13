@@ -1,6 +1,6 @@
 {
 	"name": "@apeleghq/multipart-parser",
-	"version": "1.0.20",
+	"version": "1.0.21",
 	"description": "TypeScript streaming parser for MIME multipart messages",
 	"main": "dist/index.cjs",
 	"types": "./dist/index.d.cts",
@@ -101,5 +101,8 @@
 		"prettier": "^3.6.2",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.9.3"
+	},
+	"dependencies": {
+		"@apeleghq/http-media-type-negotiator": "^1.0.6"
 	}
 }

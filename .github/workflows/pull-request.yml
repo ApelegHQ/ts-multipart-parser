@@ -1,4 +1,6 @@
 name: Run tests before merging
+permissions:
+  contents: read
 
 on:
   pull_request:

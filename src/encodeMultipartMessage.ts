@@ -13,7 +13,8 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-import { boundaryMatchRegex } from './lib/boundaryRegex.js';
+import parseMediaType from '@apeleghq/http-media-type-negotiator/parseMediaType';
+import { boundaryRegex } from './lib/boundaryRegex.js';
 import createBufferStream from './lib/createBufferStream.js';
 import EncodeError from './lib/EncodeError.js';
 
@@ -34,8 +35,6 @@ export type TDecodedMultipartMessage =
 	| TDecodedMultipartMessageWithBody
 	| TDecodedMultipartMessageWithParts;
 
-export const liberalBoundaryMatchRegex = /;\s*boundary=(?:"([^"]+)"|([^;",]+))/;
-
 const isWithParts = (
 	x: TDecodedMultipartMessage,
 ): x is TDecodedMultipartMessageWithParts => {
@@ -46,6 +45,83 @@ const isWithBody = (
 	x: TDecodedMultipartMessage,
 ): x is TDecodedMultipartMessageWithBody => {
 	return (x as TDecodedMultipartMessageWithBody).body != null;
+};
+
+const fixBoundaryParam = (
+	partContentType: string,
+	partBoundaryParam?: [string, string],
+) => {
+	const subBoundary = generateMultipartBoundary();
+	if (!partBoundaryParam) {
+		partContentType = `${partContentType.replace(/;[ \t]*$/, '')}; boundary="${subBoundary}"`;
+	} else {
+		let pos = partContentType.indexOf(';');
+		let lcPartContentType = partContentType.toLowerCase();
+		let alreadyFixed = false;
+
+		for (;;) {
+			const index = lcPartContentType.indexOf('boundary=', pos);
+			if (index === -1) break;
+
+			let boundaryStart = index + 9;
+			const quoted = lcPartContentType[boundaryStart] === '"';
+			if (quoted) {
+				boundaryStart++;
+			}
+
+			if (
+				lcPartContentType.slice(
+					boundaryStart,
+					boundaryStart + partBoundaryParam[1].length,
+				) === partBoundaryParam[1]
+			) {
+				const nextChar =
+					lcPartContentType[
+						boundaryStart + partBoundaryParam[1].length
+					];
+
+				if (
+					(quoted && nextChar === '"') ||
+					(!quoted &&
+						(nextChar === undefined ||
+							nextChar === ';' ||
+							nextChar === ' ' ||
+							nextChar === '\t'))
+				) {
+					// If the fix was already applied, this means that some
+					// ambiguous situation that this logic can't handle has
+					// occurred
+					if (alreadyFixed) {
+						throw new EncodeError(
+							'Invalid boundary given and unable to fix it',
+						);
+					}
+					alreadyFixed = true;
+
+					partContentType =
+						partContentType.slice(0, boundaryStart) +
+						(quoted ? '' : '"') +
+						subBoundary +
+						(quoted ? '' : '"') +
+						partContentType.slice(
+							boundaryStart + partBoundaryParam[1].length,
+						);
+					lcPartContentType =
+						partContentType.slice(0, boundaryStart) +
+						(quoted ? '' : '"') +
+						subBoundary +
+						(quoted ? '' : '"') +
+						lcPartContentType.slice(
+							boundaryStart + partBoundaryParam[1].length,
+						);
+				}
+			}
+
+			pos = boundaryStart;
+		}
+	}
+
+	return [subBoundary, partContentType];
 };
 
 const multipartBoundaryAlphabet =
@@ -97,31 +173,43 @@ async function* asyncEncoderGenerator(
 			if (!partContentType) {
 				subBoundary = generateMultipartBoundary();
 				partContentType = `multipart/mixed; boundary="${subBoundary}"`;
-			} else if (
-				!partContentType.startsWith('multipart/') ||
-				!liberalBoundaryMatchRegex.test(partContentType)
-			) {
-				await ws.abort(
-					new EncodeError(
-						'Invalid multipart content type: ' + partContentType,
-					),
-				);
-				return;
 			} else {
-				const messageBoundaryMatch =
-					partContentType.match(boundaryMatchRegex);
+				const parsedPartContentType = parseMediaType(partContentType);
+				if (
+					!parsedPartContentType[0]
+						.toLowerCase()
+						.startsWith('multipart/')
+				) {
+					await ws.abort(
+						new EncodeError(
+							'Invalid multipart content type: ' +
+								partContentType,
+						),
+					);
+					return;
+				}
+
+				const partBoundaryParam = parsedPartContentType[1].find(
+					(param) => {
+						return param[0].toLowerCase() === 'boundary';
+					},
+				);
 
 				// Invalid boundary. Attempt to replace it.
+				// This logic covers most cases but not some special cases,
+				// such as boundary=orig appearing inside of another parameter
 				if (
-					!messageBoundaryMatch ||
-					!(subBoundary =
-						messageBoundaryMatch[1] || messageBoundaryMatch[2])
+					!partBoundaryParam ||
+					!boundaryRegex.test(partBoundaryParam[1])
 				) {
-					subBoundary = generateMultipartBoundary();
-					partContentType = partContentType.replace(
-						liberalBoundaryMatchRegex,
-						`; boundary="${subBoundary}"`,
+					const fixed = fixBoundaryParam(
+						partContentType,
+						partBoundaryParam,
 					);
+					subBoundary = fixed[0];
+					partContentType = fixed[1];
+				} else {
+					subBoundary = partBoundaryParam[1];
 				}
 			}
 		}
@@ -181,11 +269,7 @@ async function* asyncEncoderGenerator(
 			yield;
 		} else if (isWithParts(part)) {
 			if (!subBoundary) {
-				await ws.abort(
-					new EncodeError(
-						'Runtime exception: undefined part boundary',
-					),
-				);
+				await ws.abort(new EncodeError('Undefined part boundary'));
 				return;
 			}
 
@@ -195,7 +279,7 @@ async function* asyncEncoderGenerator(
 	}
 
 	if (!count) {
-		await ws.abort(Error('At least one part is required'));
+		await ws.abort(new EncodeError('At least one part is required'));
 		return;
 	}
 
@@ -203,6 +287,117 @@ async function* asyncEncoderGenerator(
 	await createBufferStream(encodedEndBoundary).pipeTo(ws, pipeToOptions);
 }
 
+/**
+ * Creates a `ReadableStream` that emits a `multipart/*` message by encoding an
+ * iterable of message parts.
+ *
+ * This function is the inverse of `parseMultipartMessage`. It constructs a
+ * complete multipart message from a series of part objects. It is designed for
+ * efficiency and scalability, processing parts one by one and streaming the
+ * output without buffering the entire message in memory. This makes it ideal
+ * for handling large files or dynamic content.
+ *
+ * The encoder supports various body types for each part, including `ArrayBuffer`,
+ * `ArrayBufferView`, `Blob`, and `ReadableStream`. It also handles nested
+ * multipart messages recursively: if a part contains a `parts` iterable instead
+ * of a `body`, it will be encoded as a nested multipart message with an
+ * automatically generated or corrected boundary.
+ *
+ * @example
+ * ```javascript
+ * async function runExample() {
+ *   const boundary = 'example-boundary';
+
+ *   const parts = [
+ *     {
+ *       headers: new Headers({ 'Content-Type': 'text/plain' }),
+ *       body: new TextEncoder().encode('This is the first part.'),
+ *     },
+ *     {
+ *       headers: new Headers({ 'Content-Type': 'application/json' }),
+ *       body: new TextEncoder().encode(JSON.stringify({
+ *         id: 123,
+ *         status: 'ok'
+ *       })),
+ *     },
+ *     // A nested multipart part
+ *     {
+ *       parts: [
+ *         {
+ *           headers: new Headers({'Content-Type': 'text/plain'}),
+ *           body: new TextEncoder().encode('This is a nested part.'),
+ *         }
+ *       ]
+ *     },
+ *     // Another nested multipart part with a pre-set boundary
+ *     {
+ *       headers: new Headers({
+ *         'Content-Type': 'multipart/example; boundary=foo'
+ *       }),
+ *       parts: [
+ *         {
+ *           headers: new Headers({'Content-Type': 'text/plain'}),
+ *           body: new TextEncoder().encode('This is a nested part.'),
+ *         }
+ *       ]
+ *     }
+ *   ];
+
+ *   // `TransformStream` to convert from ArrayBuffer to `Uint8Array`,
+ *   // as needed by `Response`
+ *   const ABtoU8 = new TransformStream({
+ *     start() {},
+ *     transform(chunk, controller) {
+ *       controller.enqueue(new Uint8Array(chunk));
+ *     },
+ *   });
+ *   encodeMultipartMessage(boundary, parts).pipeThrough(ABtoU8);
+
+ *   // To consume the stream, you can use a Response object
+ *   const response = new Response(ABtoU8.readable);
+ *   const text = await response.text();
+
+ *   console.log(text);
+ * }
+ *
+ * // Expected output will be a string similar to this
+ * // (nested boundary is random):
+ * //
+ * // --example-boundary
+ * // content-type: text/plain
+ * //
+ * // This is the first part.
+ * // --example-boundary
+ * // content-type: application/json
+ * //
+ * // {"id":123,"status":"ok"}
+ * // --example-boundary
+ * // content-type: multipart/mixed; boundary="4_ypcARsDHmD8vEFybz+wVSg"
+ * //
+ * // --4_ypcARsDHmD8vEFybz+wVSg
+ * // content-type: text/plain
+ * //
+ * // This is a nested part.
+ * // --4_ypcARsDHmD8vEFybz+wVSg--
+ * // --example-boundary
+ * // content-type: multipart/example; boundary=foo
+ * //
+ * // --foo
+ * // content-type: text/plain
+ * //
+ * // This is a nested part.
+ * // --foo--
+ * // --example-boundary--
+ * ```
+ *
+ * @param boundary The boundary string used to separate parts. This should be
+ * the raw boundary string, without the leading `--`.
+ * @param msg An iterable (such as an array or an async generator) of message
+ * part objects. Each object represents a part and should contain `headers` and
+ * either a `body` or a nested `parts` iterable.
+ * @returns A `ReadableStream` that yields `ArrayBuffer` chunks of the fully
+ * formed multipart message, ready to be sent in a request or saved to a file.
+ */
 const encodeMultipartMessage = (
 	boundary: string,
 	msg: TIterable<TDecodedMultipartMessage>,
